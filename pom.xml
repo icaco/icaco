@@ -10,7 +10,7 @@
     </properties>
     <modules>
         <module>icaco-core</module>
-        <module>icaco-maven-plugin</module>
+        <module>icacols-maven-plugin</module>
     </modules>
     <build>
         <pluginManagement>
