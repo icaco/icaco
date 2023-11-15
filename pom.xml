@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>se.ugli.hebesu</groupId>
-    <artifactId>hebesu</artifactId>
+    <groupId>io.icaco</groupId>
+    <artifactId>icaco</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <modules>
-        <module>hebesu-core</module>
-        <module>hebesu-maven-plugin</module>
+        <module>icaco-core</module>
+        <module>icaco-maven-plugin</module>
     </modules>
     <build>
         <pluginManagement>
