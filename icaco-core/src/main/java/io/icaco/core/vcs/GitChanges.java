@@ -1,6 +1,7 @@
 package io.icaco.core.vcs;
 
-import io.icaco.core.syscmd.SysCmd;
+import io.icaco.core.syscmd.SysCmdException;
+import io.icaco.core.syscmd.SysCmdResult;
 import lombok.Value;
 import org.slf4j.Logger;
 
@@ -42,27 +43,41 @@ public class GitChanges implements VcsChanges {
     }
 
     public Set<String> listChanges(String cmd) {
-        return exec(cmd)
-                .getOutput()
-                .stream()
-                .map(row -> new Change(row, repoPath))
-                .filter(c -> c.stagingAreaChangeType != ChangeType.Deleted)
-                .filter(c -> c.workingTreeChangeType != ChangeType.Deleted)
-                .map(Change::getPaths)
-                .flatMap(Collection::stream)
-                .map(Path::toString)
-                .map(s -> s.replace(repoPath + "/", ""))
-                .collect(toSet());
+        try {
+            SysCmdResult sysCmdResult = exec(cmd);
+            if (sysCmdResult.getExitCode() != 0)
+                throw new VcsException("Git command '" + cmd + "' has exit code " + sysCmdResult.getExitCode());
+            return sysCmdResult
+                    .getOutput()
+                    .stream()
+                    .map(row -> new Change(row, repoPath))
+                    .filter(c -> c.stagingAreaChangeType != ChangeType.Deleted)
+                    .filter(c -> c.workingTreeChangeType != ChangeType.Deleted)
+                    .map(Change::getPaths)
+                    .flatMap(Collection::stream)
+                    .map(Path::toString)
+                    .map(s -> s.replace(repoPath + "/", ""))
+                    .collect(toSet());
+        } catch (SysCmdException e) {
+            throw new VcsException(e);
+        }
     }
 
     String getDefaultBranch() {
-        String cmd = "git -C " + repoPath.toAbsolutePath() + " symbolic-ref refs/remotes/origin/HEAD";
-        List<String> output = SysCmd.exec(cmd).getOutput();
-        if (output.isEmpty())
-            throw new VcsException("Couldn't get default branch by executing: " + cmd);
-        if (output.size() > 1)
-            LOG.warn("Strange! Executing cmd {} gives more than 1 row", cmd);
-        return output.get(0);
+        try {
+            String cmd = "git -C " + repoPath.toAbsolutePath() + " symbolic-ref refs/remotes/origin/HEAD";
+            SysCmdResult sysCmdResult = exec(cmd);
+            if (sysCmdResult.getExitCode() != 0)
+                throw new VcsException("Git command '" + cmd + "' has exit code " + sysCmdResult.getExitCode());
+            List<String> output = sysCmdResult.getOutput();
+            if (output.isEmpty())
+                throw new VcsException("Couldn't get default branch by executing: " + cmd);
+            if (output.size() > 1)
+                LOG.warn("Strange! Executing cmd {} gives more than 1 row", cmd);
+            return output.get(0);
+        } catch (SysCmdException e) {
+            throw new VcsException(e);
+        }
     }
 
     enum ChangeType {
@@ -75,6 +90,7 @@ public class GitChanges implements VcsChanges {
         Deleted("D");
 
         final String symbol;
+
         ChangeType(String symbol) {
             this.symbol = symbol;
         }
@@ -83,7 +99,7 @@ public class GitChanges implements VcsChanges {
             return stream(values())
                     .filter(r -> r.symbol.equalsIgnoreCase(symbol))
                     .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Unknown symbol: " +  symbol));
+                    .orElseThrow(() -> new RuntimeException("Unknown symbol: " + symbol));
         }
     }
 
@@ -97,21 +113,20 @@ public class GitChanges implements VcsChanges {
         Change(String row, Path repoPath) {
             try {
                 StringTokenizer st = new StringTokenizer(row);
-                String changeTypes =  st.nextToken();
-                stagingAreaChangeType = ChangeType.fromStr(changeTypes.substring(0,1));
+                String changeTypes = st.nextToken();
+                stagingAreaChangeType = ChangeType.fromStr(changeTypes.substring(0, 1));
                 if (changeTypes.length() == 2)
-                    workingTreeChangeType = ChangeType.fromStr(changeTypes.substring(1,2));
+                    workingTreeChangeType = ChangeType.fromStr(changeTypes.substring(1, 2));
                 else
                     workingTreeChangeType = null;
                 Path path = repoPath.resolve(st.nextToken());
                 if (isDirectory(path))
                     try (Stream<Path> stream = walk(path)) {
-                       paths = stream.filter(p -> !isDirectory(p)).collect(toSet());
+                        paths = stream.filter(p -> !isDirectory(p)).collect(toSet());
                     }
                 else
-                   paths = Set.of(path);
-            }
-            catch (IOException e) {
+                    paths = Set.of(path);
+            } catch (IOException e) {
                 throw new VcsException(e);
             }
         }
