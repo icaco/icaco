@@ -1,108 +1,120 @@
 package io.icaco.core.vcs;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.Status;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.AbstractTreeIterator;
-import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import io.icaco.core.syscmd.SysCmd;
+import lombok.Value;
+import org.slf4j.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.StringTokenizer;
+import java.util.stream.Stream;
 
-import static java.util.Optional.ofNullable;
-import static org.eclipse.jgit.api.Git.open;
-import static org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE;
+import static io.icaco.core.syscmd.SysCmd.exec;
+import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.walk;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toSet;
+import static org.slf4j.LoggerFactory.getLogger;
 
-class GitChanges implements VcsChanges {
+public class GitChanges implements VcsChanges {
 
-    final Git git;
-    final Repository repository;
+    private static final Logger LOG = getLogger(GitChanges.class);
 
-    GitChanges(Git git) {
-        this.git = git;
-        this.repository = git.getRepository();
-    }
 
-    GitChanges(Path path){
-        this(path.toFile());
-    }
+    final Path repoPath;
 
-    GitChanges(File file){
-        this(openGitWithUncheckedException(file));
-    }
-
-    static Git openGitWithUncheckedException(File file) {
-        try {
-            return open(file);
-        } catch (IOException e) {
-            throw new VcsException(e);
-        }
+    public GitChanges(Path repoPath) {
+        this.repoPath = repoPath;
     }
 
     @Override
     public Set<String> list() {
-        try {
-            Set<String> result = new HashSet<>();
-            Status status = git.status().call();
-            result.addAll(status.getUntracked());
-            result.addAll(status.getAdded());
-            result.addAll(status.getChanged());
-            result.addAll(status.getModified());
-            result.addAll(branchDiff());
-            return result;
-        } catch (GitAPIException | IOException e) {
-            throw new VcsException(e);
+        String localChangesCmd = "git -C " + repoPath.toAbsolutePath() + " status --porcelain --no-renames ";
+        String remoteChangesCmd = "git -C " + repoPath.toAbsolutePath() + " diff --name-status --no-renames " + getDefaultBranch();
+        Set<String> result = new LinkedHashSet<>();
+        result.addAll(listChanges(localChangesCmd));
+        result.addAll(listChanges(remoteChangesCmd));
+        return result;
+    }
+
+    public Set<String> listChanges(String cmd) {
+        return exec(cmd)
+                .getOutput()
+                .stream()
+                .map(row -> new Change(row, repoPath))
+                .filter(c -> c.stagingAreaChangeType != ChangeType.Deleted)
+                .filter(c -> c.workingTreeChangeType != ChangeType.Deleted)
+                .map(Change::getPaths)
+                .flatMap(Collection::stream)
+                .map(Path::toString)
+                .map(s -> s.replace(repoPath + "/", ""))
+                .collect(toSet());
+    }
+
+    String getDefaultBranch() {
+        String cmd = "git -C " + repoPath.toAbsolutePath() + " symbolic-ref refs/remotes/origin/HEAD";
+        List<String> output = SysCmd.exec(cmd).getOutput();
+        if (output.isEmpty())
+            throw new VcsException("Couldn't get default branch by executing: " + cmd);
+        if (output.size() > 1)
+            LOG.warn("Strange! Executing cmd {} gives more than 1 row", cmd);
+        return output.get(0);
+    }
+
+    enum ChangeType {
+        Untracked("?"),
+        Added("A"),
+        Modified("M"),
+        FileTypeChanged("T"),
+        Renamed("R"),
+        Copied("C"),
+        Deleted("D");
+
+        final String symbol;
+        ChangeType(String symbol) {
+            this.symbol = symbol;
+        }
+
+        static ChangeType fromStr(String symbol) {
+            return stream(values())
+                    .filter(r -> r.symbol.equalsIgnoreCase(symbol))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Unknown symbol: " +  symbol));
         }
     }
 
-    Set<String> branchDiff() throws IOException, GitAPIException {
-        AbstractTreeIterator currentBranchTree = treeIterator(currentBranch());
-        AbstractTreeIterator defaultBranchTree = treeIterator(defaultBranch());
-        return git.diff()
-                .setOldTree(defaultBranchTree)
-                .setNewTree(currentBranchTree)
-                .call()
-                .stream()
-                .filter(e -> e.getChangeType() != DELETE)
-                .map(DiffEntry::getNewPath)
-                .collect(Collectors.toSet());
-    }
+    @Value
+    static class Change {
 
-    Ref defaultBranch() throws GitAPIException {
-        return git.lsRemote()
-                .call()
-                .stream()
-                .filter(Ref::isSymbolic)
-                .findFirst()
-                .flatMap(r -> ofNullable(r.getTarget()))
-                .orElseThrow();
-    }
+        ChangeType stagingAreaChangeType;
+        ChangeType workingTreeChangeType;
+        Set<Path> paths;
 
-    Ref currentBranch() throws IOException {
-        return repository.findRef(repository.getBranch());
-    }
-
-    AbstractTreeIterator treeIterator(Ref ref) throws IOException {
-        try (RevWalk walk = new RevWalk(repository)) {
-            RevCommit commit = walk.parseCommit(ref.getObjectId());
-            RevTree tree = walk.parseTree(commit.getTree().getId());
-            CanonicalTreeParser treeParser = new CanonicalTreeParser();
-            try (ObjectReader reader = repository.newObjectReader()) {
-                treeParser.reset(reader, tree.getId());
+        Change(String row, Path repoPath) {
+            try {
+                StringTokenizer st = new StringTokenizer(row);
+                String changeTypes =  st.nextToken();
+                stagingAreaChangeType = ChangeType.fromStr(changeTypes.substring(0,1));
+                if (changeTypes.length() == 2)
+                    workingTreeChangeType = ChangeType.fromStr(changeTypes.substring(1,2));
+                else
+                    workingTreeChangeType = null;
+                Path path = repoPath.resolve(st.nextToken());
+                if (isDirectory(path))
+                    try (Stream<Path> stream = walk(path)) {
+                       paths = stream.filter(p -> !isDirectory(p)).collect(toSet());
+                    }
+                else
+                   paths = Set.of(path);
             }
-            walk.dispose();
-            return treeParser;
+            catch (IOException e) {
+                throw new VcsException(e);
+            }
         }
+
     }
 }

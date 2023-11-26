@@ -1,7 +1,5 @@
 package io.icaco.core.vcs;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.lib.Ref;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,24 +8,20 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Set;
 
+import static io.icaco.core.syscmd.SysCmd.exec;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.commons.io.FileUtils.write;
-import static org.eclipse.jgit.api.Git.cloneRepository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GitChangesTest {
 
     Path repoPath = Path.of("target/icaco-git-test");
-    Git git;
 
     @BeforeEach
     void cloneRepo() throws Exception {
         removeRepo();
-        git = cloneRepository()
-                .setURI("https://github.com/icaco/icaco-git-test.git")
-                .setDirectory(repoPath.toFile())
-                .call();
+        exec("git clone https://github.com/icaco/icaco-git-test.git " + repoPath);
     }
 
     @AfterEach
@@ -40,7 +34,7 @@ class GitChangesTest {
         // Given
         File untrackedFile = repoPath.resolve("src").resolve("test.txt").toFile();
         write(untrackedFile, "hej", defaultCharset());
-        GitChanges gitChanges = new GitChanges(git);
+        GitChanges gitChanges = new GitChanges(repoPath);
         // When
         Set<String> files =  gitChanges.list();
         // Then
@@ -52,8 +46,8 @@ class GitChangesTest {
         // Given
         File addedFile = repoPath.resolve("src").resolve("test.txt").toFile();
         write(addedFile, "hej", defaultCharset());
-        git.add().addFilepattern(".").call();
-        GitChanges gitChanges = new GitChanges(git);
+        GitChanges gitChanges = new GitChanges(repoPath);
+        gitAdd(".");
         // When
         Set<String> files =  gitChanges.list();
         // Then
@@ -65,8 +59,8 @@ class GitChangesTest {
         // Given
         File changedFile = repoPath.resolve("README.md").toFile();
         write(changedFile, "hej", defaultCharset());
-        git.add().addFilepattern(".").call();
-        GitChanges gitChanges = new GitChanges(git);
+        GitChanges gitChanges = new GitChanges(repoPath);
+        gitAdd(".");
         // When
         Set<String> files =  gitChanges.list();
         // Then
@@ -78,7 +72,7 @@ class GitChangesTest {
         // Given
         File changedFile = repoPath.resolve("README.md").toFile();
         write(changedFile, "hej", defaultCharset());
-        GitChanges gitChanges = new GitChanges(git);
+        GitChanges gitChanges = new GitChanges(repoPath);
         // When
         Set<String> files =  gitChanges.list();
         // Then
@@ -86,51 +80,33 @@ class GitChangesTest {
     }
 
     @Test
-    void defaultBranch() throws Exception {
+    void defaultBranch() {
         // Given
-        removeRepo();
-        git = cloneRepository()
-                .setURI("https://github.com/icaco/icaco-git-test.git")
-                .setDirectory(repoPath.toFile())
-                .setBranch("feature/issue1")
-                .call();
-        GitChanges gitChanges = new GitChanges(git);
+        GitChanges gitChanges = new GitChanges(repoPath);
+        gitCheckout("feature/issue1");
         // When
-        Ref defaultBranch = gitChanges.defaultBranch();
+        String defaultBranch = gitChanges.getDefaultBranch();
         // Then
-        assertEquals("refs/heads/release/1.0", defaultBranch.getName());
+        assertEquals("refs/remotes/origin/release/1.0", defaultBranch);
     }
 
     @Test
-    void currentBranch() throws Exception {
+    void listBranchDiff() {
         // Given
-        removeRepo();
-        git = cloneRepository()
-                .setURI("https://github.com/icaco/icaco-git-test.git")
-                .setDirectory(repoPath.toFile())
-                .setBranch("feature/issue1")
-                .call();
-        GitChanges gitChanges = new GitChanges(git);
-        // When
-        Ref defaultBranch = gitChanges.currentBranch();
-        // Then
-        assertEquals("refs/heads/feature/issue1", defaultBranch.getName());
-    }
-
-    @Test
-    void listBranchDiff() throws Exception {
-        // Given
-        removeRepo();
-        git = cloneRepository()
-                .setURI("https://github.com/icaco/icaco-git-test.git")
-                .setDirectory(repoPath.toFile())
-                .setBranch("feature/issue1")
-                .call();
-        GitChanges gitChanges = new GitChanges(git);
+        GitChanges gitChanges = new GitChanges(repoPath);
+        gitCheckout("feature/issue1");
         // When
         Set<String> paths = gitChanges.list();
         // Then
         assertEquals("[LICENSES, src/Test.java, README.md]", paths.toString());
+    }
+
+    void gitAdd(String s) {
+        exec("git -C " + repoPath.toAbsolutePath() + " add " + s);
+    }
+
+    void gitCheckout(String s) {
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout " + s);
     }
 
 }
