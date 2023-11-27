@@ -27,29 +27,47 @@ public class GitChanges implements VcsChanges {
     private static final Logger LOG = getLogger(GitChanges.class);
 
 
-    final Path repoPath;
+    final Path workingDir;
+    Path repoPath;
 
-    public GitChanges(Path repoPath) {
-        this.repoPath = repoPath;
+    boolean validRepo;
+
+    public GitChanges(Path workingDir) {
         LOG.info(gitVersion());
+        this.workingDir = workingDir;
+        LOG.info("git working directory: {}", workingDir.toAbsolutePath());
+        this.validRepo = isValidRepo();
+        if (validRepo) {
+            repoPath = gitRepoPath();
+            LOG.info("git repository path: {}", repoPath.toAbsolutePath());
+        }
+        else {
+            LOG.warn("repository path isn't a valid: {}", workingDir.toAbsolutePath());
+        }
+    }
+
+
+    Path gitRepoPath() {
+        String relativeRoot = join(" ", exec("git -C " + workingDir.toAbsolutePath() + " rev-parse --show-cdup").getOutput());
+        if (relativeRoot.isBlank())
+            return workingDir;
+        return workingDir.resolve(relativeRoot).normalize();
     }
 
     String gitVersion() {
         return join(" ", exec("git version").getOutput());
     }
 
-    boolean isGitRepo() {
-        return exec("git -C " + repoPath.toAbsolutePath() + " status").getExitCode() == 0;
+    boolean isValidRepo() {
+        return exec("git -C " + workingDir.toAbsolutePath() + " status").getExitCode() == 0;
     }
 
     @Override
-    public Set<String> list() {
-        if (!isGitRepo()) {
-            LOG.warn("repository path isn't a valid: {}", repoPath.toAbsolutePath());
+    public Set<Path> list() {
+        if (!validRepo) {
             return Set.of();
         }
-        LOG.info("git repository path: {}", repoPath.toAbsolutePath());
-        Set<String> result = new LinkedHashSet<>(listLocalChanges());
+        Set<Path> result = new LinkedHashSet<>(listLocalChanges());
         getDefaultBranch().ifPresentOrElse(
                 defaultBranch -> result.addAll(listRemoteChanges(defaultBranch)),
                 () -> LOG.info("git repository has no remote")
@@ -57,15 +75,15 @@ public class GitChanges implements VcsChanges {
         return result;
     }
 
-    private Set<String> listRemoteChanges(String defaultBranch) {
-        return listChanges("git -C " + repoPath.toAbsolutePath() + " diff --name-status --no-renames " + defaultBranch);
+    private Set<Path> listRemoteChanges(String defaultBranch) {
+        return listChanges("git -C " + workingDir.toAbsolutePath() + " diff --name-status --no-renames " + defaultBranch);
     }
 
-    private Set<String> listLocalChanges() {
-        return listChanges("git -C " + repoPath.toAbsolutePath() + " status --porcelain --no-renames ");
+    private Set<Path> listLocalChanges() {
+        return listChanges("git -C " + workingDir.toAbsolutePath() + " status --porcelain --no-renames ");
     }
 
-    public Set<String> listChanges(String cmd) {
+    public Set<Path> listChanges(String cmd) {
         try {
             SysCmdResult sysCmdResult = exec(cmd);
             if (sysCmdResult.getExitCode() != 0)
@@ -78,8 +96,7 @@ public class GitChanges implements VcsChanges {
                     .filter(c -> c.workingTreeChangeType != ChangeType.Deleted)
                     .map(Change::getPaths)
                     .flatMap(Collection::stream)
-                    .map(Path::toString)
-                    .map(s -> s.replace(repoPath + "/", ""))
+                    .map(Path::toAbsolutePath)
                     .collect(toSet());
         } catch (SysCmdException e) {
             throw new VcsException(e);

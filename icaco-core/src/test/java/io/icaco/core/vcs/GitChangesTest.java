@@ -8,12 +8,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 
 import static io.icaco.core.syscmd.SysCmd.exec;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.commons.io.FileUtils.write;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,9 +44,9 @@ class GitChangesTest {
         write(untrackedFile, "hej", defaultCharset());
         GitChanges gitChanges = new GitChanges(repoPath);
         // When
-        Set<String> files =  gitChanges.list();
+        Set<Path> files =  gitChanges.list();
         // Then
-        assertEquals(Set.of("src/test.txt"), files);
+        assertEquals(toAbsolutePaths("src/test.txt"), files);
     }
 
     @Test
@@ -55,9 +57,9 @@ class GitChangesTest {
         GitChanges gitChanges = new GitChanges(repoPath);
         exec("git -C " + repoPath.toAbsolutePath() + " add .");
         // When
-        Set<String> files =  gitChanges.list();
+        Set<Path> files =  gitChanges.list();
         // Then
-        assertEquals(Set.of("src/test.txt"), files);
+        assertEquals(toAbsolutePaths("src/test.txt"), files);
     }
 
     @Test
@@ -68,9 +70,9 @@ class GitChangesTest {
         GitChanges gitChanges = new GitChanges(repoPath);
         exec("git -C " + repoPath.toAbsolutePath() + " add .");
         // When
-        Set<String> files =  gitChanges.list();
+        Set<Path> files =  gitChanges.list();
         // Then
-        assertEquals(Set.of("README.md"), files);
+        assertEquals(toAbsolutePaths("README.md"), files);
     }
 
     @Test
@@ -80,9 +82,9 @@ class GitChangesTest {
         write(changedFile, "hej", defaultCharset());
         GitChanges gitChanges = new GitChanges(repoPath);
         // When
-        Set<String> files =  gitChanges.list();
+        Set<Path> files =  gitChanges.list();
         // Then
-        assertEquals(Set.of("README.md"), files);
+        assertEquals(toAbsolutePaths("README.md"), files);
     }
 
     @Test
@@ -105,7 +107,7 @@ class GitChangesTest {
         GitChanges gitChanges = new GitChanges(repoPath);
         // When
         Optional<String> defaultBranch = gitChanges.getDefaultBranch();
-        Set<String> paths = gitChanges.list();
+        Set<Path> paths = gitChanges.list();
         // Then
         assertFalse(defaultBranch.isPresent());
         assertEquals("[]", paths.toString());
@@ -117,9 +119,9 @@ class GitChangesTest {
         GitChanges gitChanges = new GitChanges(repoPath);
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         // When
-        Set<String> paths = gitChanges.list();
+        Set<Path> paths = gitChanges.list();
         // Then
-        assertEquals("[LICENSES, src/Test.java, README.md]", paths.toString());
+        assertEquals(toAbsolutePaths("LICENSES", "src/main/java/icaco/Test.java", "README.md", "pom.xml"), paths);
     }
 
     @Test
@@ -128,9 +130,16 @@ class GitChangesTest {
         repoPath =  Files.createTempDirectory(randomUUID().toString());
         GitChanges gitChanges = new GitChanges(repoPath);
         // When
-        Set<String> paths = gitChanges.list();
+        Set<Path> paths = gitChanges.list();
         // Then
         assertEquals("[]", paths.toString());
+    }
+
+    Set<Path> toAbsolutePaths(String... paths) {
+        return Arrays.stream(paths)
+                .map(p -> repoPath.resolve(p))
+                .map(Path::toAbsolutePath)
+                .collect(toSet());
     }
 
 }
