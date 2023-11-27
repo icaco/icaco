@@ -9,12 +9,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.stream.Stream;
 
 import static io.icaco.core.syscmd.SysCmd.exec;
+import static java.lang.String.join;
 import static java.nio.file.Files.isDirectory;
 import static java.nio.file.Files.walk;
 import static java.util.Arrays.stream;
@@ -30,16 +31,38 @@ public class GitChanges implements VcsChanges {
 
     public GitChanges(Path repoPath) {
         this.repoPath = repoPath;
+        LOG.info(gitVersion());
+    }
+
+    String gitVersion() {
+        return join(" ", exec("git version").getOutput());
+    }
+
+    boolean isGitRepo() {
+        return exec("git -C " + repoPath.toAbsolutePath() + " status").getExitCode() == 0;
     }
 
     @Override
     public Set<String> list() {
-        String localChangesCmd = "git -C " + repoPath.toAbsolutePath() + " status --porcelain --no-renames ";
-        String remoteChangesCmd = "git -C " + repoPath.toAbsolutePath() + " diff --name-status --no-renames " + getDefaultBranch();
-        Set<String> result = new LinkedHashSet<>();
-        result.addAll(listChanges(localChangesCmd));
-        result.addAll(listChanges(remoteChangesCmd));
+        if (!isGitRepo()) {
+            LOG.warn("repository path isn't a valid: {}", repoPath.toAbsolutePath());
+            return Set.of();
+        }
+        LOG.info("git repository path: {}", repoPath.toAbsolutePath());
+        Set<String> result = new LinkedHashSet<>(listLocalChanges());
+        getDefaultBranch().ifPresentOrElse(
+                defaultBranch -> result.addAll(listRemoteChanges(defaultBranch)),
+                () -> LOG.info("git repository has no remote")
+        );
         return result;
+    }
+
+    private Set<String> listRemoteChanges(String defaultBranch) {
+        return listChanges("git -C " + repoPath.toAbsolutePath() + " diff --name-status --no-renames " + defaultBranch);
+    }
+
+    private Set<String> listLocalChanges() {
+        return listChanges("git -C " + repoPath.toAbsolutePath() + " status --porcelain --no-renames ");
     }
 
     public Set<String> listChanges(String cmd) {
@@ -63,18 +86,19 @@ public class GitChanges implements VcsChanges {
         }
     }
 
-    String getDefaultBranch() {
+    Optional<String> getDefaultBranch() {
         try {
             String cmd = "git -C " + repoPath.toAbsolutePath() + " symbolic-ref refs/remotes/origin/HEAD";
             SysCmdResult sysCmdResult = exec(cmd);
+            if (sysCmdResult.getExitCode() == 128)
+                return Optional.empty();
             if (sysCmdResult.getExitCode() != 0)
                 throw new VcsException("Git command '" + cmd + "' has exit code " + sysCmdResult.getExitCode());
-            List<String> output = sysCmdResult.getOutput();
-            if (output.isEmpty())
+            if (sysCmdResult.getOutput().isEmpty())
                 throw new VcsException("Couldn't get default branch by executing: " + cmd);
-            if (output.size() > 1)
-                LOG.warn("Strange! Executing cmd {} gives more than 1 row", cmd);
-            return output.get(0);
+            String result = join(" ", sysCmdResult.getOutput());
+            LOG.info("default branch: {}", result);
+            return Optional.of(result);
         } catch (SysCmdException e) {
             throw new VcsException(e);
         }

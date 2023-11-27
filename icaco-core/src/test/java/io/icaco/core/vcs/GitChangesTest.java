@@ -5,14 +5,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.Set;
 
 import static io.icaco.core.syscmd.SysCmd.exec;
 import static java.nio.charset.Charset.defaultCharset;
+import static java.util.UUID.randomUUID;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.commons.io.FileUtils.write;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GitChangesTest {
 
@@ -47,7 +53,7 @@ class GitChangesTest {
         File addedFile = repoPath.resolve("src").resolve("test.txt").toFile();
         write(addedFile, "hej", defaultCharset());
         GitChanges gitChanges = new GitChanges(repoPath);
-        gitAdd(".");
+        exec("git -C " + repoPath.toAbsolutePath() + " add .");
         // When
         Set<String> files =  gitChanges.list();
         // Then
@@ -60,7 +66,7 @@ class GitChangesTest {
         File changedFile = repoPath.resolve("README.md").toFile();
         write(changedFile, "hej", defaultCharset());
         GitChanges gitChanges = new GitChanges(repoPath);
-        gitAdd(".");
+        exec("git -C " + repoPath.toAbsolutePath() + " add .");
         // When
         Set<String> files =  gitChanges.list();
         // Then
@@ -83,30 +89,48 @@ class GitChangesTest {
     void defaultBranch() {
         // Given
         GitChanges gitChanges = new GitChanges(repoPath);
-        gitCheckout("feature/issue1");
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         // When
-        String defaultBranch = gitChanges.getDefaultBranch();
+        Optional<String> defaultBranch = gitChanges.getDefaultBranch();
         // Then
-        assertEquals("refs/remotes/origin/release/1.0", defaultBranch);
+        assertTrue(defaultBranch.isPresent());
+        assertEquals("refs/remotes/origin/release/1.0", defaultBranch.get());
+    }
+
+    @Test
+    void hasNoRemote() throws IOException {
+        // Given
+        repoPath =  Files.createTempDirectory(randomUUID().toString());
+        exec("git -C " + repoPath.toAbsolutePath() + " init");
+        GitChanges gitChanges = new GitChanges(repoPath);
+        // When
+        Optional<String> defaultBranch = gitChanges.getDefaultBranch();
+        Set<String> paths = gitChanges.list();
+        // Then
+        assertFalse(defaultBranch.isPresent());
+        assertEquals("[]", paths.toString());
     }
 
     @Test
     void listBranchDiff() {
         // Given
         GitChanges gitChanges = new GitChanges(repoPath);
-        gitCheckout("feature/issue1");
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         // When
         Set<String> paths = gitChanges.list();
         // Then
         assertEquals("[LICENSES, src/Test.java, README.md]", paths.toString());
     }
 
-    void gitAdd(String s) {
-        exec("git -C " + repoPath.toAbsolutePath() + " add " + s);
-    }
-
-    void gitCheckout(String s) {
-        exec("git -C " + repoPath.toAbsolutePath() + " checkout " + s);
+    @Test
+    void notAGitRepo() throws IOException {
+        // Given
+        repoPath =  Files.createTempDirectory(randomUUID().toString());
+        GitChanges gitChanges = new GitChanges(repoPath);
+        // When
+        Set<String> paths = gitChanges.list();
+        // Then
+        assertEquals("[]", paths.toString());
     }
 
 }
