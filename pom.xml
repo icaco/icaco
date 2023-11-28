@@ -60,4 +60,11 @@
             </plugins>
         </pluginManagement>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Icaco Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/icaco/icaco</url>
+        </repository>
+    </distributionManagement>
 </project>
