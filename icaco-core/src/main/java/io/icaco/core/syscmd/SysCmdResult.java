@@ -9,5 +9,6 @@ import java.util.List;
 @Builder
 public class SysCmdResult {
     List<String> output;
-    int exitCode;
+    int exitValue;
+    Exception exception;
 }
