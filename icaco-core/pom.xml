@@ -42,41 +42,25 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.2</version>
-                <configuration>
-                    <argLine>${surefire.argLine}</argLine>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>io.icaco</groupId>
                 <artifactId>icaco-maven-plugin</artifactId>
-                <version>1.0.0</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>jacocoCheckNewCodeIncludes</goal>
                         </goals>
-                        <configuration>
-                            <jacocoCheckNewCodeIncludesPropertyName>jacoco.check.new.code.includes</jacocoCheckNewCodeIncludesPropertyName>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.11</version>
                 <executions>
                     <execution>
                         <id>jacoco-prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
-                        <configuration>
-                            <propertyName>surefire.argLine</propertyName>
-                        </configuration>
                     </execution>
                     <execution>
                         <id>report</id>
