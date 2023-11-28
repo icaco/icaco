@@ -1,11 +1,11 @@
 package io.icaco.core.vcs;
 
-import io.icaco.core.syscmd.SysCmdException;
 import io.icaco.core.syscmd.SysCmdResult;
 import lombok.Value;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -40,8 +40,7 @@ public class GitChanges implements VcsChanges {
         if (validRepo) {
             repoPath = gitRepoPath();
             LOG.info("git repository path: {}", repoPath.toAbsolutePath());
-        }
-        else {
+        } else {
             LOG.warn("repository path isn't a valid: {}", workingDir.toAbsolutePath());
         }
     }
@@ -59,7 +58,7 @@ public class GitChanges implements VcsChanges {
     }
 
     boolean isValidRepo() {
-        return exec("git -C " + workingDir.toAbsolutePath() + " status").getExitCode() == 0;
+        return exec("git -C " + workingDir.toAbsolutePath() + " status").getExitValue() == 0;
     }
 
     @Override
@@ -84,41 +83,33 @@ public class GitChanges implements VcsChanges {
     }
 
     public Set<Path> listChanges(String cmd) {
-        try {
-            SysCmdResult sysCmdResult = exec(cmd);
-            if (sysCmdResult.getExitCode() != 0)
-                throw new VcsException("Git command '" + cmd + "' has exit code " + sysCmdResult.getExitCode());
-            return sysCmdResult
-                    .getOutput()
-                    .stream()
-                    .map(row -> new Change(row, repoPath))
-                    .filter(c -> c.stagingAreaChangeType != ChangeType.Deleted)
-                    .filter(c -> c.workingTreeChangeType != ChangeType.Deleted)
-                    .map(Change::getPaths)
-                    .flatMap(Collection::stream)
-                    .map(Path::toAbsolutePath)
-                    .collect(toSet());
-        } catch (SysCmdException e) {
-            throw new VcsException(e);
-        }
+        SysCmdResult sysCmdResult = exec(cmd);
+        if (sysCmdResult.getExitValue() != 0)
+            throw new VcsException("Git command '" + cmd + "' has exit code " + sysCmdResult.getExitValue());
+        return sysCmdResult
+                .getOutput()
+                .stream()
+                .map(row -> new Change(row, repoPath))
+                .filter(c -> c.stagingAreaChangeType != ChangeType.Deleted)
+                .filter(c -> c.workingTreeChangeType != ChangeType.Deleted)
+                .map(Change::getPaths)
+                .flatMap(Collection::stream)
+                .map(Path::toAbsolutePath)
+                .collect(toSet());
     }
 
     Optional<String> getDefaultBranch() {
-        try {
-            String cmd = "git -C " + repoPath.toAbsolutePath() + " symbolic-ref refs/remotes/origin/HEAD";
-            SysCmdResult sysCmdResult = exec(cmd);
-            if (sysCmdResult.getExitCode() == 128)
-                return Optional.empty();
-            if (sysCmdResult.getExitCode() != 0)
-                throw new VcsException("Git command '" + cmd + "' has exit code " + sysCmdResult.getExitCode());
-            if (sysCmdResult.getOutput().isEmpty())
-                throw new VcsException("Couldn't get default branch by executing: " + cmd);
-            String result = join(" ", sysCmdResult.getOutput());
-            LOG.info("default branch: {}", result);
-            return Optional.of(result);
-        } catch (SysCmdException e) {
-            throw new VcsException(e);
-        }
+        String cmd = "git -C " + repoPath.toAbsolutePath() + " symbolic-ref refs/remotes/origin/HEAD";
+        SysCmdResult sysCmdResult = exec(cmd);
+        if (sysCmdResult.getExitValue() == 128)
+            return Optional.empty();
+        if (sysCmdResult.getExitValue() != 0)
+            throw new VcsException("Git command '" + cmd + "' has exit code " + sysCmdResult.getExitValue());
+        if (sysCmdResult.getOutput().isEmpty())
+            throw new VcsException("Couldn't get default branch by executing: " + cmd);
+        String result = join(" ", sysCmdResult.getOutput());
+        LOG.info("default branch: {}", result);
+        return Optional.of(result);
     }
 
     enum ChangeType {
@@ -168,7 +159,7 @@ public class GitChanges implements VcsChanges {
                 else
                     paths = Set.of(path);
             } catch (IOException e) {
-                throw new VcsException(e);
+                throw new UncheckedIOException(e);
             }
         }
 

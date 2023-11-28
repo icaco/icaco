@@ -6,27 +6,30 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Arrays.asList;
+import static java.lang.Integer.MIN_VALUE;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 
 public class SysCmd {
 
-    public static SysCmdResult exec(String cmd, String... flags) {
+    public static SysCmdResult exec(String cmd) {
         Process process = null;
         try {
-            List<String> command = asList(cmd.split(" "));
-            command.addAll(asList(flags));
-            process = new ProcessBuilder(command)
-                    .start();
+            String[] command = cmd.split(" ");
+            process = new ProcessBuilder(command).start();
             process.waitFor();
             return SysCmdResult.builder()
                     .output(getProcessOutput(process))
-                    .exitCode(process.exitValue())
+                    .exitValue(process.exitValue())
                     .build();
         } catch (IOException | InterruptedException e) {
-            throw new SysCmdException(e);
+            return SysCmdResult.builder()
+                    .output(e.getMessage().lines().collect(toList()))
+                    .exitValue(MIN_VALUE)
+                    .exception(e)
+                    .build();
         } finally {
-            if (process != null)
-                process.destroy();
+            ofNullable(process).ifPresent(Process::destroy);
         }
     }
 
