@@ -1,2 +1,5 @@
-package io.icaco.core.vcs;public class VcsCommand {
+package io.icaco.core.vcs;
+
+public interface VcsCommand<T> {
+    T execute();
 }

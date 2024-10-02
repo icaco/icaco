@@ -44,7 +44,7 @@ class GitChangesTest {
         write(untrackedFile, "hej", defaultCharset());
         GitChanges gitChanges = new GitChanges(repoPath);
         // When
-        Set<Path> files =  gitChanges.list();
+        Set<Path> files =  gitChanges.execute();
         // Then
         assertEquals(toAbsolutePaths("src/test.txt"), files);
     }
@@ -57,7 +57,7 @@ class GitChangesTest {
         GitChanges gitChanges = new GitChanges(repoPath);
         exec("git -C " + repoPath.toAbsolutePath() + " add .");
         // When
-        Set<Path> files =  gitChanges.list();
+        Set<Path> files =  gitChanges.execute();
         // Then
         assertEquals(toAbsolutePaths("src/test.txt"), files);
     }
@@ -70,7 +70,7 @@ class GitChangesTest {
         GitChanges gitChanges = new GitChanges(repoPath);
         exec("git -C " + repoPath.toAbsolutePath() + " add .");
         // When
-        Set<Path> files =  gitChanges.list();
+        Set<Path> files =  gitChanges.execute();
         // Then
         assertEquals(toAbsolutePaths("README.md"), files);
     }
@@ -82,7 +82,7 @@ class GitChangesTest {
         write(changedFile, "hej", defaultCharset());
         GitChanges gitChanges = new GitChanges(repoPath);
         // When
-        Set<Path> files =  gitChanges.list();
+        Set<Path> files =  gitChanges.execute();
         // Then
         assertEquals(toAbsolutePaths("README.md"), files);
     }
@@ -107,7 +107,7 @@ class GitChangesTest {
         GitChanges gitChanges = new GitChanges(repoPath);
         // When
         Optional<String> defaultBranch = gitChanges.getDefaultBranch();
-        Set<Path> paths = gitChanges.list();
+        Set<Path> paths = gitChanges.execute();
         // Then
         assertFalse(defaultBranch.isPresent());
         assertEquals("[]", paths.toString());
@@ -119,7 +119,7 @@ class GitChangesTest {
         GitChanges gitChanges = new GitChanges(repoPath);
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         // When
-        Set<Path> paths = gitChanges.list();
+        Set<Path> paths = gitChanges.execute();
         // Then
         assertEquals(toAbsolutePaths("LICENSES", "src/main/java/icaco/Test.java", "README.md", "pom.xml"), paths);
     }
@@ -130,7 +130,7 @@ class GitChangesTest {
         repoPath =  Files.createTempDirectory(randomUUID().toString());
         GitChanges gitChanges = new GitChanges(repoPath);
         // When
-        Set<Path> paths = gitChanges.list();
+        Set<Path> paths = gitChanges.execute();
         // Then
         assertEquals("[]", paths.toString());
     }

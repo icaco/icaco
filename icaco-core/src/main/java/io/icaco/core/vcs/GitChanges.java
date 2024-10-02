@@ -22,48 +22,17 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class GitChanges implements VcsChanges {
+public class GitChanges extends GitCommand implements VcsChanges {
 
     private static final Logger LOG = getLogger(GitChanges.class);
 
-
-    final Path workingDir;
-    Path repoPath;
-
-    boolean validRepo;
-
     public GitChanges(Path workingDir) {
-        LOG.info(gitVersion());
-        this.workingDir = workingDir;
-        LOG.info("git working directory: {}", workingDir.toAbsolutePath());
-        this.validRepo = isValidRepo();
-        if (validRepo) {
-            repoPath = gitRepoPath();
-            LOG.info("git repository path: {}", repoPath.toAbsolutePath());
-        }
-        else {
-            LOG.warn("repository path isn't a valid: {}", workingDir.toAbsolutePath());
-        }
+        super(workingDir);
     }
 
-
-    Path gitRepoPath() {
-        String relativeRoot = join(" ", exec("git -C " + workingDir.toAbsolutePath() + " rev-parse --show-cdup").getOutput());
-        if (relativeRoot.isBlank())
-            return workingDir;
-        return workingDir.resolve(relativeRoot).normalize();
-    }
-
-    String gitVersion() {
-        return join(" ", exec("git version").getOutput());
-    }
-
-    boolean isValidRepo() {
-        return exec("git -C " + workingDir.toAbsolutePath() + " status").getExitCode() == 0;
-    }
 
     @Override
-    public Set<Path> list() {
+    public Set<Path> execute() {
         if (!validRepo) {
             return Set.of();
         }

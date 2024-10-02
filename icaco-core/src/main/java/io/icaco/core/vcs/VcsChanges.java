@@ -3,11 +3,12 @@ package io.icaco.core.vcs;
 import java.nio.file.Path;
 import java.util.Set;
 
-public interface VcsChanges {
-    Set<Path> list();
+import static io.icaco.core.vcs.VcsType.Git;
 
-    static VcsChanges create(String vcsType, Path path) {
-        if ("git".equalsIgnoreCase(vcsType))
+public interface VcsChanges extends VcsCommand<Set<Path>> {
+
+    static VcsChanges create(VcsType vcsType, Path path) {
+        if (vcsType == Git)
             return new GitChanges(path);
         throw new VcsException("VcsType not implemented: " + vcsType);
     }

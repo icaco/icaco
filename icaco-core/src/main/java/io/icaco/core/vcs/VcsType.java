@@ -1,2 +1,5 @@
-package io.icaco.core.vcs;public enum VcsType {
+package io.icaco.core.vcs;
+
+public enum VcsType {
+    Git
 }

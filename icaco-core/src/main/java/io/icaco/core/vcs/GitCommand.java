@@ -1,25 +1,25 @@
 package io.icaco.core.vcs;
 
+import io.icaco.core.syscmd.SysCmdResult;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
 
 import static io.icaco.core.syscmd.SysCmd.exec;
-import static java.lang.String.join;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class GitCommons {
+abstract class GitCommand {
 
-    private static final Logger LOG = getLogger(GitCommons.class);
+    private static final Logger LOG = getLogger(GitCommand.class);
 
     final Path workingDir;
     final boolean validRepo;
     Path repoPath;
 
 
-    public GitCommons(Path workingDir) {
-        LOG.info(gitVersion());
+    public GitCommand(Path workingDir) {
         this.workingDir = workingDir;
+        LOG.info(gitVersion());
         LOG.info("git working directory: {}", workingDir.toAbsolutePath());
         this.validRepo = isValidRepo();
         if (validRepo) {
@@ -32,18 +32,22 @@ public class GitCommons {
     }
 
     String gitVersion() {
-        return join(" ", exec("git version").getOutput());
+        return execGit("version").getSingleValueOutput();
     }
 
     boolean isValidRepo() {
-        return exec("git -C " + workingDir.toAbsolutePath() + " status").getExitCode() == 0;
+        return execGit("status").getExitCode() == 0;
     }
 
 
     Path gitRepoPath() {
-        String relativeRoot = join(" ", exec("git -C " + workingDir.toAbsolutePath() + " rev-parse --show-cdup").getOutput());
+        String relativeRoot = execGit("rev-parse", "--show-cdup").getSingleValueOutput();
         if (relativeRoot.isBlank())
             return workingDir;
         return workingDir.resolve(relativeRoot).normalize();
+    }
+
+    SysCmdResult execGit(String... arguments) {
+        return exec("git -C " + workingDir.toAbsolutePath(), arguments);
     }
 }

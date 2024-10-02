@@ -1,6 +1,7 @@
 package io.icaco.maven;
 
 import io.icaco.core.vcs.VcsChanges;
+import io.icaco.core.vcs.VcsType;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -40,8 +41,8 @@ public class JacocoCheckNewCodeIncludesMojo extends AbstractMojo {
 
     List<String> getChangedClassFiles() throws IOException, InterruptedException {
         Path sourcePath = Path.of(project.getBuild().getSourceDirectory()).toAbsolutePath();
-        return VcsChanges.create(vcsType, project.getBasedir().toPath())
-                .list()
+        return VcsChanges.create(VcsType.valueOf(vcsType), project.getBasedir().toPath())
+                .execute()
                 .stream()
                 .filter(path -> path.startsWith(sourcePath))
                 .map(Path::toString)
