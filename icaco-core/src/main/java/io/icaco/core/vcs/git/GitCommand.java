@@ -1,4 +1,4 @@
-package io.icaco.core.vcs;
+package io.icaco.core.vcs.git;
 
 import io.icaco.core.syscmd.SysCmdResult;
 import org.slf4j.Logger;

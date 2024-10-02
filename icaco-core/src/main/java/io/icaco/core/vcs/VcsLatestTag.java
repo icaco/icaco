@@ -1,5 +1,7 @@
 package io.icaco.core.vcs;
 
+import io.icaco.core.vcs.git.GitLatestTag;
+
 import java.nio.file.Path;
 import java.util.Optional;
 

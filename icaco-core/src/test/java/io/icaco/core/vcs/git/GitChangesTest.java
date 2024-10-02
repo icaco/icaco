@@ -1,5 +1,6 @@
-package io.icaco.core.vcs;
+package io.icaco.core.vcs.git;
 
+import io.icaco.core.vcs.git.GitChanges;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

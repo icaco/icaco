@@ -1,12 +1,12 @@
 package io.icaco.core.vcs;
 
-class VcsException extends RuntimeException {
+public class VcsException extends RuntimeException {
 
-    VcsException(Exception e) {
+    public VcsException(Exception e) {
         super(e);
     }
 
-    VcsException(String msg) {
+    public VcsException(String msg) {
         super(msg);
     }
 
