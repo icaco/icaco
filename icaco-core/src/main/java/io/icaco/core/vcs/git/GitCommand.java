@@ -21,7 +21,7 @@ abstract class GitCommand {
         this.workingDir = workingDir;
         LOG.info(gitVersion());
         LOG.info("git working directory: {}", workingDir.toAbsolutePath());
-        this.validRepo = isValidRepo();
+        validRepo = isValidRepo();
         if (validRepo) {
             repoPath = gitRepoPath();
             LOG.info("git repository path: {}", repoPath.toAbsolutePath());
