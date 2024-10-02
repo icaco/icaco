@@ -24,12 +24,10 @@ public class GitChanges extends GitCommand implements VcsChanges {
         super(workingDir);
     }
 
-
     @Override
     public Set<Path> execute() {
-        if (!validRepo) {
+        if (!validRepo)
             return Set.of();
-        }
         Set<Path> result = new LinkedHashSet<>(listLocalChanges());
         getDefaultBranch().ifPresentOrElse(
                 defaultBranch -> result.addAll(listRemoteChanges(defaultBranch)),
@@ -50,7 +48,7 @@ public class GitChanges extends GitCommand implements VcsChanges {
         try {
             SysCmdResult result = execGit(gitArguments);
             if (result.getExitCode() != 0)
-                throw new VcsException("Git command '" + result.getCommand() + "' has exit code " + result.getExitCode());
+                throw new VcsException(result);
             return result
                     .getOutput()
                     .stream()
@@ -72,7 +70,7 @@ public class GitChanges extends GitCommand implements VcsChanges {
             if (result.getExitCode() == 128)
                 return Optional.empty();
             if (result.getExitCode() != 0)
-                throw new VcsException("Git command '" + result.getCommand() + "' has exit code " + result.getExitCode());
+                throw new VcsException(result);
             if (result.getOutput().isEmpty())
                 throw new VcsException("Couldn't get default branch by executing: " + result.getCommand());
             LOG.info("default branch: {}", result.getSingleValueOutput());

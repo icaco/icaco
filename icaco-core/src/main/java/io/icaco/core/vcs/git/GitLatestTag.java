@@ -23,9 +23,8 @@ public class GitLatestTag extends GitCommand implements VcsLatestTag {
     @Override
     public Optional<String> execute() {
         try {
-            if (!validRepo) {
+            if (!validRepo)
                 return empty();
-            }
             SysCmdResult result = execGit("describe", "--tags");
             if (result.getExitCode() == 128) {
                 LOG.debug(result.getSingleValueOutput());
@@ -33,7 +32,7 @@ public class GitLatestTag extends GitCommand implements VcsLatestTag {
             }
             if (result.getExitCode() != 0) {
                 LOG.debug(result.getSingleValueOutput());
-                throw new VcsException("Git command '" + result.getCommand() + "' has exit code " + result.getExitCode());
+                throw new VcsException(result);
             }
             return Optional.of(result.getSingleValueOutput());
         } catch (SysCmdException e) {

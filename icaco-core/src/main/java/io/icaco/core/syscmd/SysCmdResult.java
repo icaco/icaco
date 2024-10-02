@@ -5,8 +5,6 @@ import lombok.Value;
 
 import java.util.List;
 
-import static java.lang.String.join;
-
 @Value
 @Builder
 public class SysCmdResult {
