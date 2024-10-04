@@ -13,16 +13,16 @@ import static java.util.Arrays.asList;
 
 public class SysCmd {
 
-    public static SysCmdResult exec(String cmd, String... arguments) {
+    public static SysCmdResult exec(String cmd, String... args) {
         Process process = null;
         try {
-            List<String> command = new ArrayList<>(asList(cmd.split(" ")));
-            command.addAll(asList(arguments));
-            process = new ProcessBuilder(command)
+            List<String> commandTokens = new ArrayList<>(asList(cmd.split(" ")));
+            commandTokens.addAll(asList(args));
+            process = new ProcessBuilder(commandTokens)
                     .start();
             process.waitFor();
             return SysCmdResult.builder()
-                    .command(join(" ", command))
+                    .command(join(" ", commandTokens))
                     .output(readProcessOutput(process))
                     .exitCode(process.exitValue())
                     .build();
