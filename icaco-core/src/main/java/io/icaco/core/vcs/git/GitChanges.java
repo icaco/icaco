@@ -36,15 +36,15 @@ public class GitChanges extends GitCommand implements VcsChanges {
         return result;
     }
 
-    private Set<Path> listRemoteChanges(String defaultBranch) {
+    Set<Path> listRemoteChanges(String defaultBranch) {
         return listChanges("diff", "--name-status", "--no-renames", defaultBranch);
     }
 
-    private Set<Path> listLocalChanges() {
+    Set<Path> listLocalChanges() {
         return listChanges("status", "--porcelain", "--no-renames");
     }
 
-    public Set<Path> listChanges(String... gitArguments) {
+    Set<Path> listChanges(String... gitArguments) {
         try {
             SysCmdResult result = execGit(gitArguments);
             if (result.getExitCode() != 0)
