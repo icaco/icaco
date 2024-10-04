@@ -2,10 +2,10 @@ package io.icaco.core.syscmd;
 
 import org.junit.jupiter.api.Test;
 
-import static java.lang.Integer.MIN_VALUE;
 import static java.lang.String.join;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class SysCmdTest {
 
@@ -16,7 +16,7 @@ class SysCmdTest {
         // When
         SysCmdResult sysCmdResult = SysCmd.exec(cmd);
         // Then
-        assertEquals(0, sysCmdResult.getExitValue());
+        assertEquals(0, sysCmdResult.getExitCode());
         String out = join(" ", sysCmdResult.getOutput());
         assertTrue(out.contains("pom.xml"));
     }
@@ -28,7 +28,7 @@ class SysCmdTest {
         // When
         SysCmdResult sysCmdResult = SysCmd.exec(cmd);
         // Then
-        assertEquals(1, sysCmdResult.getExitValue());
+        assertEquals(1, sysCmdResult.getExitCode());
     }
 
     @Test
@@ -36,10 +36,14 @@ class SysCmdTest {
         // Given
         String cmd = "beppo";
         // When
-        SysCmdResult sysCmdResult = SysCmd.exec(cmd);
-        // Then
-        assertEquals(MIN_VALUE, sysCmdResult.getExitValue());
-        assertEquals("Cannot run program \"beppo\": error=2, No such file or directory", sysCmdResult.getException().getMessage());
+        try {
+            SysCmd.exec(cmd);
+            fail();
+        }
+        catch (SysCmdException e) {
+            // Then
+            assertEquals("Cannot run program \"beppo\": error=2, No such file or directory", e.getMessage());
+        }
     }
 
 }
