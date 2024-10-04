@@ -8,7 +8,15 @@ import java.util.List;
 @Value
 @Builder
 public class SysCmdResult {
+    String command;
     List<String> output;
-    int exitValue;
-    Exception exception;
+    int exitCode;
+
+    public String getSingleValueOutput() {
+        if (output.isEmpty())
+            return "";
+        if (output.size() == 1)
+            return output.get(0);
+        throw new IllegalStateException("More than 1 output elements");
+    }
 }

@@ -1,9 +1,19 @@
 package io.icaco.core.vcs;
 
-class VcsException extends RuntimeException {
+import io.icaco.core.syscmd.SysCmdResult;
 
-    VcsException(String msg) {
+public class VcsException extends RuntimeException {
+
+    public VcsException(Exception e) {
+        super(e);
+    }
+
+    public VcsException(String msg) {
         super(msg);
+    }
+
+    public VcsException(SysCmdResult result) {
+        super("Git command '" + result.getCommand() + "' has exit code " + result.getExitCode());
     }
 
 }

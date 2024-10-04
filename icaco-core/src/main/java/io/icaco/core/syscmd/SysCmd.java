@@ -2,39 +2,40 @@ package io.icaco.core.syscmd;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
-import static java.lang.Integer.MIN_VALUE;
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toList;
+import static java.lang.String.join;
+import static java.util.Arrays.asList;
 
 public class SysCmd {
 
-    public static SysCmdResult exec(String cmd) {
+    public static SysCmdResult exec(String cmd, String... args) {
         Process process = null;
         try {
-            String[] command = cmd.split(" ");
-            process = new ProcessBuilder(command).start();
+            List<String> commandTokens = new ArrayList<>(asList(cmd.split(" ")));
+            commandTokens.addAll(asList(args));
+            process = new ProcessBuilder(commandTokens)
+                    .start();
             process.waitFor();
             return SysCmdResult.builder()
-                    .output(getProcessOutput(process))
-                    .exitValue(process.exitValue())
+                    .command(join(" ", commandTokens))
+                    .output(readProcessOutput(process))
+                    .exitCode(process.exitValue())
                     .build();
         } catch (IOException | InterruptedException e) {
-            return SysCmdResult.builder()
-                    .output(e.getMessage().lines().collect(toList()))
-                    .exitValue(MIN_VALUE)
-                    .exception(e)
-                    .build();
+            throw new SysCmdException(e);
         } finally {
-            ofNullable(process).ifPresent(Process::destroy);
+            if (process != null)
+                process.destroy();
         }
     }
 
-    static List<String> getProcessOutput(Process process) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+    static List<String> readProcessOutput(Process process) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(getResultStream(process).get()))) {
             List<String> result = new ArrayList<>();
             String line;
             while ((line = reader.readLine()) != null)
@@ -42,5 +43,12 @@ public class SysCmd {
             return result;
         }
     }
+
+    static Supplier<InputStream> getResultStream(Process process) {
+        if ( process.exitValue() == 0)
+            return process::getInputStream;
+        return process::getErrorStream;
+    }
+
 
 }

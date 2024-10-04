@@ -1,16 +1,17 @@
 package io.icaco.maven;
 
-import io.icaco.core.vcs.VcsChanges;
+import io.icaco.core.vcs.VcsChangesCommand;
+import io.icaco.core.vcs.VcsType;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
+import static io.icaco.core.vcs.VcsType.Git;
+import static io.icaco.core.vcs.VcsType.findVcsType;
 import static java.lang.String.join;
 import static java.util.stream.Collectors.toList;
 import static org.apache.maven.plugins.annotations.LifecyclePhase.INITIALIZE;
@@ -28,20 +29,18 @@ public class JacocoCheckNewCodeIncludesMojo extends AbstractMojo {
     String vcsType;
 
     @Override
-    public void execute() throws MojoExecutionException {
-        try {
-            List<String> changedClassFiles = getChangedClassFiles();
-            changedClassFiles.forEach(f -> getLog().info("Changed class file: " + f));
-            project.getProperties().setProperty(jacocoCheckNewCodeIncludesPropertyName, join(",", changedClassFiles));
-        } catch (IOException | InterruptedException e) {
-            throw new MojoExecutionException(e);
-        }
+    public void execute() {
+        List<String> changedClassFiles = getChangedClassFiles();
+        changedClassFiles.forEach(f -> getLog().info("Changed class file: " + f));
+        project.getProperties().setProperty(jacocoCheckNewCodeIncludesPropertyName, join(",", changedClassFiles));
     }
 
-    List<String> getChangedClassFiles() throws IOException, InterruptedException {
+    List<String> getChangedClassFiles() {
         Path sourcePath = Path.of(project.getBuild().getSourceDirectory()).toAbsolutePath();
-        return VcsChanges.create(vcsType, project.getBasedir().toPath())
-                .list()
+        Path basePath = project.getBasedir().toPath();
+        VcsType vcs = findVcsType(vcsType).orElse(Git);
+        return VcsChangesCommand.create(vcs, basePath)
+                .execute()
                 .stream()
                 .filter(path -> path.startsWith(sourcePath))
                 .map(Path::toString)
