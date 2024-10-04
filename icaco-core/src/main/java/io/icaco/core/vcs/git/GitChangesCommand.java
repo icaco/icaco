@@ -1,6 +1,5 @@
 package io.icaco.core.vcs.git;
 
-import io.icaco.core.syscmd.SysCmdException;
 import io.icaco.core.syscmd.SysCmdResult;
 import io.icaco.core.vcs.VcsChangesCommand;
 import io.icaco.core.vcs.VcsException;
@@ -45,39 +44,31 @@ public class GitChangesCommand extends GitCommand implements VcsChangesCommand {
     }
 
     Set<Path> listChanges(String... gitArguments) {
-        try {
-            SysCmdResult result = execGit(gitArguments);
-            if (result.getExitCode() != 0)
-                throw new VcsException(result);
-            return result
-                    .getOutput()
-                    .stream()
-                    .map(row -> new GitChange(row, repoPath))
-                    .filter(c -> c.getStagingAreaChangeType() != Deleted)
-                    .filter(c -> c.getWorkingTreeChangeType() != Deleted)
-                    .map(GitChange::getPaths)
-                    .flatMap(Collection::stream)
-                    .map(Path::toAbsolutePath)
-                    .collect(toSet());
-        } catch (SysCmdException e) {
-            throw new VcsException(e);
-        }
+        SysCmdResult result = execGit(gitArguments);
+        if (result.getExitCode() != 0)
+            throw new VcsException(result);
+        return result
+                .getOutput()
+                .stream()
+                .map(row -> new GitChange(row, repoPath))
+                .filter(c -> c.getStagingAreaChangeType() != Deleted)
+                .filter(c -> c.getWorkingTreeChangeType() != Deleted)
+                .map(GitChange::getPaths)
+                .flatMap(Collection::stream)
+                .map(Path::toAbsolutePath)
+                .collect(toSet());
     }
 
     Optional<String> getDefaultBranch() {
-        try {
-            SysCmdResult result = execGit("symbolic-ref", "refs/remotes/origin/HEAD");
-            if (result.getExitCode() == 128)
-                return Optional.empty();
-            if (result.getExitCode() != 0)
-                throw new VcsException(result);
-            if (result.getOutput().isEmpty())
-                throw new VcsException("Couldn't get default branch by executing: " + result.getCommand());
-            LOG.info("default branch: {}", result.getSingleValueOutput());
-            return Optional.of(result.getSingleValueOutput());
-        } catch (SysCmdException e) {
-            throw new VcsException(e);
-        }
+        SysCmdResult result = execGit("symbolic-ref", "refs/remotes/origin/HEAD");
+        if (result.getExitCode() == 128)
+            return Optional.empty();
+        if (result.getExitCode() != 0)
+            throw new VcsException(result);
+        if (result.getOutput().isEmpty())
+            throw new VcsException("Couldn't get default branch by executing: " + result.getCommand());
+        LOG.info("default branch: {}", result.getSingleValueOutput());
+        return Optional.of(result.getSingleValueOutput());
     }
 
 }

@@ -1,6 +1,5 @@
 package io.icaco.core.vcs.git;
 
-import io.icaco.core.syscmd.SysCmdException;
 import io.icaco.core.syscmd.SysCmdResult;
 import io.icaco.core.vcs.VcsException;
 import io.icaco.core.vcs.VcsLatestTagCommand;
@@ -22,22 +21,16 @@ public class GitLatestTagCommand extends GitCommand implements VcsLatestTagComma
 
     @Override
     public Optional<String> execute() {
-        try {
-            if (!validRepo)
-                return empty();
-            SysCmdResult result = execGit("describe", "--tags");
-            if (result.getExitCode() == 128) {
-                LOG.debug(result.getSingleValueOutput());
-                return empty();
-            }
-            if (result.getExitCode() != 0) {
-                LOG.debug(result.getSingleValueOutput());
-                throw new VcsException(result);
-            }
+        if (!validRepo)
+            return empty();
+        SysCmdResult result = execGit("describe", "--tags");
+        if (result.getExitCode() == 0)
             return Optional.of(result.getSingleValueOutput());
-        } catch (SysCmdException e) {
-            throw new VcsException(e);
+        if (result.getExitCode() == 128) {
+            LOG.debug(result.getSingleValueOutput());
+            return empty();
         }
-
+        LOG.error(result.getSingleValueOutput());
+        throw new VcsException(result);
     }
 }
