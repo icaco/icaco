@@ -2,7 +2,7 @@ package io.icaco.core.vcs.git;
 
 import io.icaco.core.syscmd.SysCmdException;
 import io.icaco.core.syscmd.SysCmdResult;
-import io.icaco.core.vcs.VcsChanges;
+import io.icaco.core.vcs.VcsChangesCommand;
 import io.icaco.core.vcs.VcsException;
 import org.slf4j.Logger;
 
@@ -16,11 +16,11 @@ import static io.icaco.core.vcs.git.GitChangeType.Deleted;
 import static java.util.stream.Collectors.toSet;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class GitChanges extends GitCommand implements VcsChanges {
+public class GitChangesCommand extends GitCommand implements VcsChangesCommand {
 
-    private static final Logger LOG = getLogger(GitChanges.class);
+    private static final Logger LOG = getLogger(GitChangesCommand.class);
 
-    public GitChanges(Path workingDir) {
+    public GitChangesCommand(Path workingDir) {
         super(workingDir);
     }
 

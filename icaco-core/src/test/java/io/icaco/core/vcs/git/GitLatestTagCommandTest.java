@@ -9,12 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class GitLatestTagTest extends GitCommandTest {
+class GitLatestTagCommandTest extends GitCommandTest {
 
     @Test
     void noLatestTag() {
         // Given
-        GitLatestTag latestTag = new GitLatestTag(repoPath);
+        GitLatestTagCommand latestTag = new GitLatestTagCommand(repoPath);
         // When
         Optional<String> tag = latestTag.execute();
         // Then
@@ -25,11 +25,11 @@ class GitLatestTagTest extends GitCommandTest {
     void latestTag() {
         // Given
         execGit("tag", "1.0.0");
-        GitLatestTag latestTag = new GitLatestTag(repoPath);
+        GitLatestTagCommand latestTag = new GitLatestTagCommand(repoPath);
         // When
         Optional<String> tag = latestTag.execute();
         // Then
-        assertEquals("1.0.0", tag.get());
+        assertEquals("1.0.0", tag.orElseThrow());
     }
 
     @Test
@@ -39,11 +39,11 @@ class GitLatestTagTest extends GitCommandTest {
         writeString(repoPath.resolve("src").resolve("test.txt"), "hej");
         execGit("add", ".");
         execGit("commit", "-m", "\"text\"");
-        GitLatestTag latestTag = new GitLatestTag(repoPath);
+        GitLatestTagCommand latestTag = new GitLatestTagCommand(repoPath);
         // When
         Optional<String> tag = latestTag.execute();
         // Then
-        assertTrue(tag.get().startsWith("1.0.0"));
+        assertTrue(tag.orElseThrow().startsWith("1.0.0"));
         assertNotEquals("1.0.0", tag.get());
     }
 }

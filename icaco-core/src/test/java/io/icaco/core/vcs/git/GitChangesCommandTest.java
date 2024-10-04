@@ -15,13 +15,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class GitChangesTest extends GitCommandTest {
+class GitChangesCommandTest extends GitCommandTest {
 
     @Test
     void listUntracked() throws Exception {
         // Given
         writeString(repoPath.resolve("src").resolve("test.txt"), "hej");
-        GitChanges gitChanges = new GitChanges(repoPath);
+        GitChangesCommand gitChanges = new GitChangesCommand(repoPath);
         // When
         Set<Path> files =  gitChanges.execute();
         // Then
@@ -32,7 +32,7 @@ class GitChangesTest extends GitCommandTest {
     void listAdded() throws Exception {
         // Given
         writeString(repoPath.resolve("src").resolve("test.txt"), "hej");
-        GitChanges gitChanges = new GitChanges(repoPath);
+        GitChangesCommand gitChanges = new GitChangesCommand(repoPath);
         execGit("add", ".");
         // When
         Set<Path> files =  gitChanges.execute();
@@ -44,7 +44,7 @@ class GitChangesTest extends GitCommandTest {
     void listChanged() throws Exception {
         // Given
         writeString(repoPath.resolve("README.md"), "hej");
-        GitChanges gitChanges = new GitChanges(repoPath);
+        GitChangesCommand gitChanges = new GitChangesCommand(repoPath);
         execGit("add", ".");
         // When
         Set<Path> files =  gitChanges.execute();
@@ -56,7 +56,7 @@ class GitChangesTest extends GitCommandTest {
     void listModified() throws Exception {
         // Given
         writeString(repoPath.resolve("README.md"), "hej");
-        GitChanges gitChanges = new GitChanges(repoPath);
+        GitChangesCommand gitChanges = new GitChangesCommand(repoPath);
         // When
         Set<Path> files =  gitChanges.execute();
         // Then
@@ -66,7 +66,7 @@ class GitChangesTest extends GitCommandTest {
     @Test
     void defaultBranch() {
         // Given
-        GitChanges gitChanges = new GitChanges(repoPath);
+        GitChangesCommand gitChanges = new GitChangesCommand(repoPath);
         execGit("checkout", "feature/issue1");
         // When
         Optional<String> defaultBranch = gitChanges.getDefaultBranch();
@@ -80,7 +80,7 @@ class GitChangesTest extends GitCommandTest {
         // Given
         Path repoPath =  Files.createTempDirectory(randomUUID().toString());
         execGit("init");
-        GitChanges gitChanges = new GitChanges(repoPath);
+        GitChangesCommand gitChanges = new GitChangesCommand(repoPath);
         // When
         Optional<String> defaultBranch = gitChanges.getDefaultBranch();
         Set<Path> paths = gitChanges.execute();
@@ -92,7 +92,7 @@ class GitChangesTest extends GitCommandTest {
     @Test
     void listBranchDiff() {
         // Given
-        GitChanges gitChanges = new GitChanges(repoPath);
+        GitChangesCommand gitChanges = new GitChangesCommand(repoPath);
         execGit("checkout", "feature/issue1");
         // When
         Set<Path> paths = gitChanges.execute();
@@ -104,7 +104,7 @@ class GitChangesTest extends GitCommandTest {
     void notAGitRepo() throws IOException {
         // Given
         Path repoPath =  Files.createTempDirectory(randomUUID().toString());
-        GitChanges gitChanges = new GitChanges(repoPath);
+        GitChangesCommand gitChanges = new GitChangesCommand(repoPath);
         // When
         Set<Path> paths = gitChanges.execute();
         // Then

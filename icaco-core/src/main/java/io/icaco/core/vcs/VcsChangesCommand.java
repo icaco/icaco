@@ -1,17 +1,17 @@
 package io.icaco.core.vcs;
 
-import io.icaco.core.vcs.git.GitChanges;
+import io.icaco.core.vcs.git.GitChangesCommand;
 
 import java.nio.file.Path;
 import java.util.Set;
 
 import static io.icaco.core.vcs.VcsType.Git;
 
-public interface VcsChanges extends VcsCommand<Set<Path>> {
+public interface VcsChangesCommand extends VcsCommand<Set<Path>> {
 
-    static VcsChanges create(VcsType vcsType, Path path) {
+    static VcsChangesCommand create(VcsType vcsType, Path path) {
         if (vcsType == Git)
-            return new GitChanges(path);
+            return new GitChangesCommand(path);
         throw new VcsException("VcsType not implemented: " + vcsType);
     }
 }
