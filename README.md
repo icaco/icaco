@@ -2,7 +2,7 @@
 ## Icaco Plugin
 ### VCS Version
 
-     mvn io.icaco:icaco-maven-plugin:1.2.0-SNAPSHOT:vcs-version versions:set -DnewVersion=\${icaco.branch.version} && mvn clean install -DskipTests
+     mvn io.github.icaco:icaco-maven-plugin:1.2.1:vcs-version versions:set -DnewVersion=\${icaco.branch.version} && mvn clean install -DskipTests
 
 ## Maven
 
