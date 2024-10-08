@@ -1,12 +1,13 @@
 package io.icaco.core.vcs.git;
 
+import io.icaco.core.vcs.model.VcsTag;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GitLatestTagCommandTest extends GitCommandTest {
@@ -16,7 +17,7 @@ class GitLatestTagCommandTest extends GitCommandTest {
         // Given
         GitLatestTagCommand latestTag = new GitLatestTagCommand(repoPath);
         // When
-        Optional<String> tag = latestTag.execute();
+        Optional<VcsTag> tag = latestTag.execute();
         // Then
         assertTrue(tag.isEmpty());
     }
@@ -27,9 +28,10 @@ class GitLatestTagCommandTest extends GitCommandTest {
         execGit("tag", "1.0.0");
         GitLatestTagCommand latestTag = new GitLatestTagCommand(repoPath);
         // When
-        Optional<String> tag = latestTag.execute();
+        Optional<VcsTag> tag = latestTag.execute();
         // Then
-        assertEquals("1.0.0", tag.orElseThrow());
+        assertEquals("1.0.0", tag.orElseThrow().getName());
+        assertFalse(tag.orElseThrow().hasCommitsOnTag());
     }
 
     @Test
@@ -41,9 +43,9 @@ class GitLatestTagCommandTest extends GitCommandTest {
         execGit("commit", "-m", "\"text\"");
         GitLatestTagCommand latestTag = new GitLatestTagCommand(repoPath);
         // When
-        Optional<String> tag = latestTag.execute();
+        Optional<VcsTag> tag = latestTag.execute();
         // Then
-        assertTrue(tag.orElseThrow().startsWith("1.0.0"));
-        assertNotEquals("1.0.0", tag.get());
+        assertEquals("1.0.0", tag.orElseThrow().getName());
+        assertTrue(tag.orElseThrow().hasCommitsOnTag());
     }
 }

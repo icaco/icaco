@@ -2,11 +2,11 @@
 ## Icaco Plugin
 ### VCS Version
 
-     mvn io.github.icaco:icaco-maven-plugin:1.2.1:vcs-version versions:set -DnewVersion=\${icaco.branch.version} && mvn clean install -DskipTests
+     mvn io.github.icaco:icaco-maven-plugin:1.2.2:vcs-version versions:set -DnewVersion=\${icaco.vcs.version} -DuseJiraIdOnFeatureBranch=true && mvn clean install -DskipTests
 
 ## Maven
 
-    mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.0.0
+    mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.2.2
 
 ## Git
 ### Remove local tag

@@ -27,10 +27,11 @@ abstract class GitCommandTest {
         deleteDirectory(repoPath.toFile());
     }
 
-    void execGit(String... arguments) {
+    SysCmdResult execGit(String... arguments) {
         SysCmdResult result = exec("git -C " + repoPath.toAbsolutePath(), arguments);
         if (result.getExitCode() != 0)
             throw new VcsException(result);
+        return result;
     }
 
     void writeString(Path path, String data) throws IOException {
