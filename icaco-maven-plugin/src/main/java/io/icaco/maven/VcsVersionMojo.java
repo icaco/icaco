@@ -25,8 +25,11 @@ public class VcsVersionMojo extends AbstractMojo {
     @Parameter(property = "vcsType", defaultValue = "git")
     String vcsType;
 
-    @Parameter(property = "defaultVersion", defaultValue = "0.0.0-latest")
+    @Parameter(property = "defaultVersion", defaultValue = "0.0.0")
     String defaultVersion;
+
+    @Parameter(property = "commitsAheadTagPostfix", defaultValue = "latest")
+    String commitsAheadTagPostfix;
 
     @Parameter(property = "useJiraIdOnFeatureBranch")
     boolean useJiraIdOnFeatureBranch;
@@ -54,7 +57,7 @@ public class VcsVersionMojo extends AbstractMojo {
         }
         return VcsLatestTagCommand.create(vcs, basePath)
                 .execute()
-                .map(e -> e.getName() + (e.hasCommitsOnTag() ? "-latest" : ""))
+                .map(e -> e.getName() + (e.hasCommitsOnTag() ? "-" + commitsAheadTagPostfix : ""))
                 .orElse(defaultVersion);
     }
 
@@ -65,7 +68,7 @@ public class VcsVersionMojo extends AbstractMojo {
             if (branch.startsWith(featureBranchPrefix)) {
                 String[] tokens = branch.replace(featureBranchPrefix, "").split("-");
                 if (tokens.length >= 2) {
-                    return Optional.of(tokens[0] + "-" + tokens[1] + "-latest");
+                    return Optional.of(tokens[0] + "-" + tokens[1] + "-" + commitsAheadTagPostfix);
                 }
                 else
                     getLog().warn("Not found jira id on feature branch '" + branch + "'. Using version from tag instead.");
