@@ -94,6 +94,51 @@ public class VcsVersionMojoTest {
     }
 
     @Test
+    public void releaseBranch() throws Exception {
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
+        exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.4");
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout -b release/1.2.3");
+        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        myMojo.useReleaseBranchVersionNumber = true;
+        // When
+        myMojo.execute();
+        // Then
+        String property = myMojo.project.getProperties().getProperty(myMojo.vcsVersionPropertyName);
+        assertEquals("1.2.3", property);
+    }
+
+    @Test
+    public void doNotUseReleaseBranchVersionNumber() throws Exception {
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
+        exec("git -C " + repoPath.toAbsolutePath() + " tag 1.5.4");
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout -b release/1.2.3");
+        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        myMojo.useReleaseBranchVersionNumber = false;
+        // When
+        myMojo.execute();
+        // Then
+        String property = myMojo.project.getProperties().getProperty(myMojo.vcsVersionPropertyName);
+        assertEquals("1.5.4", property);
+    }
+
+    @Test
+    public void releaseBranchWithCommits() throws Exception {
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
+        exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.4");
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout -b release/1.2.4");
+        write(repoPath.resolve("src").resolve("test.txt").toFile(), "\"text\"", defaultCharset());
+        exec("git -C " + repoPath.toAbsolutePath() + " add .");
+        exec("git -C " + repoPath.toAbsolutePath() + " commit -m \"text\"");
+        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        myMojo.useReleaseBranchVersionNumber = true;
+        // When
+        myMojo.execute();
+        // Then
+        String property = myMojo.project.getProperties().getProperty(myMojo.vcsVersionPropertyName);
+        assertEquals("1.2.4", property);
+    }
+
+    @Test
     public void noJiraId() throws Exception {
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.5");

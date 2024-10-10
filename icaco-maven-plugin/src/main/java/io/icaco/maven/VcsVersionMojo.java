@@ -37,6 +37,12 @@ public class VcsVersionMojo extends AbstractMojo {
     @Parameter(property = "featureBranchPrefix", defaultValue = "feature/")
     String featureBranchPrefix;
 
+    @Parameter(property = "useReleaseBranchVersionNumber")
+    boolean useReleaseBranchVersionNumber;
+
+    @Parameter(property = "releaseBranchPrefix", defaultValue = "release/")
+    String releaseBranchPrefix;
+
     @Parameter(property = "vcsVersionPropertyName", defaultValue = "icaco.vcs.version")
     String vcsVersionPropertyName;
 
@@ -50,10 +56,16 @@ public class VcsVersionMojo extends AbstractMojo {
     String computeVersion() {
         VcsType vcs = findVcsType(vcsType).orElse(Git);
         Path basePath = project.getBasedir().toPath();
-        if (useJiraIdOnFeatureBranch) {
-            Optional<String> jiraId = getJiraId(vcs, basePath);
-            if (jiraId.isPresent())
-                return jiraId.get();
+        Optional<String> currentBranch = VcsCurrentBranchCommand.create(vcs, basePath).execute();
+        if (currentBranch.isPresent()) {
+            String branch = currentBranch.get();
+            if (branch.startsWith(featureBranchPrefix) && useJiraIdOnFeatureBranch) {
+                Optional<String> jiraId = getJiraId(currentBranch.get());
+                if (jiraId.isPresent())
+                    return jiraId.get();
+            }
+            if (branch.startsWith(releaseBranchPrefix) && useReleaseBranchVersionNumber)
+                return branch.replace(releaseBranchPrefix, "").replace("/", "");
         }
         return VcsLatestTagCommand.create(vcs, basePath)
                 .execute()
@@ -61,21 +73,14 @@ public class VcsVersionMojo extends AbstractMojo {
                 .orElse(defaultVersion);
     }
 
-    Optional<String> getJiraId(VcsType vcs, Path basePath) {
-        Optional<String> currentBranch = VcsCurrentBranchCommand.create(vcs, basePath).execute();
-        if (currentBranch.isPresent()) {
-            String branch = currentBranch.get();
-            if (branch.startsWith(featureBranchPrefix)) {
-                String[] tokens = branch.replace(featureBranchPrefix, "").split("-");
-                if (tokens.length >= 2) {
-                    return Optional.of(tokens[0] + "-" + tokens[1] + "-" + commitsAheadTagPostfix);
-                }
-                else
-                    getLog().warn("Not found jira id on feature branch '" + branch + "'. Using version from tag instead.");
-            }
-        }
-        else
-            getLog().warn("Current branch not found");
+    Optional<String> getJiraId(String branch) {
+        String[] tokens = branch.replace(featureBranchPrefix, "")
+                .replace("/", "")
+                .split("-");
+        if (tokens.length >= 2) {
+            return Optional.of(tokens[0] + "-" + tokens[1] + "-" + commitsAheadTagPostfix);
+        } else
+            getLog().warn("Not found jira id on feature branch '" + branch + "'. Using version from tag instead.");
         return empty();
     }
 
