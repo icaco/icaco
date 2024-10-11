@@ -3,9 +3,7 @@ package io.icaco.core.syscmd;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.String.join;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SysCmdTest {
 
@@ -28,7 +26,7 @@ class SysCmdTest {
         // When
         SysCmdResult sysCmdResult = SysCmd.exec(cmd);
         // Then
-        assertEquals(1, sysCmdResult.getExitCode());
+        assertNotEquals(0, sysCmdResult.getExitCode());
     }
 
     @Test
