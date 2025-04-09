@@ -46,6 +46,12 @@ public class VcsVersionMojo extends AbstractMojo {
     @Parameter(property = "vcsVersionPropertyName", defaultValue = "icaco.vcs.version")
     String vcsVersionPropertyName;
 
+    @Parameter(property = "mainBranchName", defaultValue = "main")
+    String mainBranchName;
+
+    @Parameter(property = "useLatestVersionOnMainBranch")
+    boolean useLatestVersionOnMainBranch;
+
     @Override
     public void execute() {
         String vcsVersion = computeVersion();
@@ -59,13 +65,15 @@ public class VcsVersionMojo extends AbstractMojo {
         Optional<String> currentBranch = VcsCurrentBranchCommand.create(vcs, basePath).execute();
         if (currentBranch.isPresent()) {
             String branch = currentBranch.get();
-            if (branch.startsWith(featureBranchPrefix) && useJiraIdOnFeatureBranch) {
+            if (useJiraIdOnFeatureBranch && branch.startsWith(featureBranchPrefix)) {
                 Optional<String> jiraId = getJiraId(currentBranch.get());
                 if (jiraId.isPresent())
                     return jiraId.get();
             }
-            if (branch.startsWith(releaseBranchPrefix) && useReleaseBranchVersionNumber)
+            if (useReleaseBranchVersionNumber && branch.startsWith(releaseBranchPrefix))
                 return branch.replace(releaseBranchPrefix, "").replace("/", "");
+            if (useLatestVersionOnMainBranch && branch.equals(mainBranchName))
+                return "latest";
         }
         return VcsLatestTagCommand.create(vcs, basePath)
                 .execute()

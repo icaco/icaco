@@ -151,5 +151,30 @@ public class VcsVersionMojoTest {
         assertEquals("1.1.5", property);
     }
 
+    @Test
+    public void latestOnMain() throws Exception {
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout main");
+        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        myMojo.useLatestVersionOnMainBranch = true;
+        // When
+        myMojo.execute();
+        // Then
+        String property = myMojo.project.getProperties().getProperty(myMojo.vcsVersionPropertyName);
+        assertEquals("latest", property);
+    }
+
+    @Test
+    public void latestOnMaster() throws Exception {
+        exec("git -C " + repoPath.toAbsolutePath() + " checkout master");
+        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        myMojo.useLatestVersionOnMainBranch = true;
+        myMojo.mainBranchName = "master";
+        // When
+        myMojo.execute();
+        // Then
+        String property = myMojo.project.getProperties().getProperty(myMojo.vcsVersionPropertyName);
+        assertEquals("latest", property);
+    }
+
 }
 
