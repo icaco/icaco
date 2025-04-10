@@ -52,11 +52,18 @@ public class VcsVersionMojo extends AbstractMojo {
     @Parameter(property = "useLatestVersionOnMainBranch")
     boolean useLatestVersionOnMainBranch;
 
+    @Parameter(property = "doNotExecuteInSubModules", defaultValue = "true")
+    boolean doNotExecuteInSubModules;
+
     @Override
     public void execute() {
-        String vcsVersion = computeVersion();
-        getLog().info(vcsVersionPropertyName + ": " + vcsVersion);
-        project.getProperties().setProperty(vcsVersionPropertyName, vcsVersion);
+        if (doNotExecuteInSubModules && project.hasParent())
+            getLog().info("Skipping execution in submodule.");
+        else {
+            String vcsVersion = computeVersion();
+            getLog().info(vcsVersionPropertyName + ": " + vcsVersion);
+            project.getProperties().setProperty(vcsVersionPropertyName, vcsVersion);
+        }
     }
 
     String computeVersion() {

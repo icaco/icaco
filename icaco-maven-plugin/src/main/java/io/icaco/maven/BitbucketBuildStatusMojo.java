@@ -41,6 +41,9 @@ public class BitbucketBuildStatusMojo extends AbstractMojo {
     @Parameter(property = "buildUrl")
     String buildUrl;
 
+    @Parameter(property = "doNotExecuteInSubModules", defaultValue = "true")
+    boolean doNotExecuteInSubModules;
+
     final HttpClient httpClient = HttpClient.newBuilder()
             .version(HTTP_2)
             .connectTimeout(ofSeconds(10))
@@ -118,14 +121,18 @@ public class BitbucketBuildStatusMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException {
         try {
-            String commit = gitCommit();
-            HttpRequest request = httpRequest(commit);
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != 204)
-                throw new MojoExecutionException(
-                        "Failed to update build status. Server returned: " + response.statusCode() + " " + response.body()
-                );
-            getLog().info(format("Build status updated to %s for commit %s", buildState(), commit));
+            if (doNotExecuteInSubModules && project.hasParent())
+                getLog().info("Skipping execution in submodule.");
+            else {
+                String commit = gitCommit();
+                HttpRequest request = httpRequest(commit);
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() != 204)
+                    throw new MojoExecutionException(
+                            "Failed to update build status. Server returned: " + response.statusCode() + " " + response.body()
+                    );
+                getLog().info(format("Build status updated to %s for commit %s", buildState(), commit));
+            }
         } catch (IOException | InterruptedException e) {
             throw new MojoExecutionException("Error updating build status", e);
         }

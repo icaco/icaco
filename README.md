@@ -6,7 +6,7 @@
 
 ## Maven
 
-    mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.4.0
+    mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.5.0
 
 ## Git
 ### Remove local tag
