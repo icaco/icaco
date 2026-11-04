@@ -1,41 +1,40 @@
 package io.icaco.maven;
 
-import org.apache.maven.plugin.testing.MojoRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.apache.maven.project.MavenProject;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 
 import static io.icaco.core.syscmd.SysCmd.exec;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class JacocoCheckNewCodeIncludesMojoTest {
-
-    @Rule
-    public MojoRule rule = new MojoRule();
+class JacocoCheckNewCodeIncludesMojoTest {
 
     Path repoPath = Path.of("target/icaco-git-test");
 
-    @Before
-    public void cloneRepo() throws Exception {
+    @BeforeEach
+    void cloneRepo() throws Exception {
         removeRepo();
         exec("git clone https://github.com/icaco/icaco-git-test.git " + repoPath);
     }
 
-    @After
-    public void removeRepo() throws Exception {
+    @AfterEach
+    void removeRepo() throws Exception {
         deleteDirectory(repoPath.toFile());
     }
 
 
     @Test
-    public void execute() throws Exception {
+    void execute() throws Exception {
         // Given
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
-        JacocoCheckNewCodeIncludesMojo myMojo = (JacocoCheckNewCodeIncludesMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "jacocoCheckNewCodeIncludes");
+        JacocoCheckNewCodeIncludesMojo myMojo = MojoDefaults.apply(new JacocoCheckNewCodeIncludesMojo(), "jacocoCheckNewCodeIncludes");
+        myMojo.project = new MavenProject();
+        myMojo.project.setFile(repoPath.resolve("pom.xml").toAbsolutePath().toFile());
+        myMojo.project.getBuild().setSourceDirectory(repoPath.resolve("src/main/java").toAbsolutePath().toString());
         // When
         myMojo.execute();
         // Then

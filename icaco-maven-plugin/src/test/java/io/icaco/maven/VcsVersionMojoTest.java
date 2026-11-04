@@ -1,10 +1,9 @@
 package io.icaco.maven;
 
-import org.apache.maven.plugin.testing.MojoRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.apache.maven.project.MavenProject;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 
@@ -12,33 +11,37 @@ import static io.icaco.core.syscmd.SysCmd.exec;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.commons.io.FileUtils.write;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class VcsVersionMojoTest {
-
-    @Rule
-    public MojoRule rule = new MojoRule();
+class VcsVersionMojoTest {
 
     Path repoPath = Path.of("target/icaco-git-test");
 
-    @Before
-    public void cloneRepo() throws Exception {
+    @BeforeEach
+    void cloneRepo() throws Exception {
         removeRepo();
         exec("git clone https://github.com/icaco/icaco-git-test.git " + repoPath);
     }
 
-    @After
-    public void removeRepo() throws Exception {
+    @AfterEach
+    void removeRepo() throws Exception {
         deleteDirectory(repoPath.toFile());
+    }
+
+    VcsVersionMojo mojo() throws Exception {
+        VcsVersionMojo mojo = MojoDefaults.apply(new VcsVersionMojo(), "vcs-version");
+        mojo.project = new MavenProject();
+        mojo.project.setFile(repoPath.resolve("pom.xml").toAbsolutePath().toFile());
+        return mojo;
     }
 
 
     @Test
-    public void tag() throws Exception {
+    void tag() throws Exception {
         // Given
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.1");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         // When
         myMojo.execute();
         // Then
@@ -47,14 +50,14 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void latest() throws Exception {
+    void latest() throws Exception {
         // Given
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.2");
         write(repoPath.resolve("src").resolve("test.txt").toFile(), "\"text\"", defaultCharset());
         exec("git -C " + repoPath.toAbsolutePath() + " add .");
         exec("git -C " + repoPath.toAbsolutePath() + " commit -m \"text\"");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         // When
         myMojo.execute();
         // Then
@@ -63,14 +66,14 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void snapshot() throws Exception {
+    void snapshot() throws Exception {
         // Given
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.3");
         write(repoPath.resolve("src").resolve("test.txt").toFile(), "\"text\"", defaultCharset());
         exec("git -C " + repoPath.toAbsolutePath() + " add .");
         exec("git -C " + repoPath.toAbsolutePath() + " commit -m \"text\"");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         myMojo.commitsAheadTagPostfix = "SNAPSHOT";
         // When
         myMojo.execute();
@@ -80,11 +83,11 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void jiraId() throws Exception {
+    void jiraId() throws Exception {
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.4");
         exec("git -C " + repoPath.toAbsolutePath() + " checkout -b feature/KAA-2333-mamma-pappa-barn");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         myMojo.useJiraIdOnFeatureBranch = true;
         // When
         myMojo.execute();
@@ -94,11 +97,11 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void releaseBranch() throws Exception {
+    void releaseBranch() throws Exception {
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.4");
         exec("git -C " + repoPath.toAbsolutePath() + " checkout -b release/1.2.3");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         myMojo.useReleaseBranchVersionNumber = true;
         // When
         myMojo.execute();
@@ -108,11 +111,11 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void doNotUseReleaseBranchVersionNumber() throws Exception {
+    void doNotUseReleaseBranchVersionNumber() throws Exception {
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.5.4");
         exec("git -C " + repoPath.toAbsolutePath() + " checkout -b release/1.2.3");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         myMojo.useReleaseBranchVersionNumber = false;
         // When
         myMojo.execute();
@@ -122,14 +125,14 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void releaseBranchWithCommits() throws Exception {
+    void releaseBranchWithCommits() throws Exception {
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.4");
         exec("git -C " + repoPath.toAbsolutePath() + " checkout -b release/1.2.4");
         write(repoPath.resolve("src").resolve("test.txt").toFile(), "\"text\"", defaultCharset());
         exec("git -C " + repoPath.toAbsolutePath() + " add .");
         exec("git -C " + repoPath.toAbsolutePath() + " commit -m \"text\"");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         myMojo.useReleaseBranchVersionNumber = true;
         // When
         myMojo.execute();
@@ -139,11 +142,11 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void noJiraId() throws Exception {
+    void noJiraId() throws Exception {
         exec("git -C " + repoPath.toAbsolutePath() + " checkout feature/issue1");
         exec("git -C " + repoPath.toAbsolutePath() + " tag 1.1.5");
         exec("git -C " + repoPath.toAbsolutePath() + " checkout -b feature/KAA-2333-mamma-pappa-barn");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         // When
         myMojo.execute();
         // Then
@@ -152,9 +155,9 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void latestOnMain() throws Exception {
+    void latestOnMain() throws Exception {
         exec("git -C " + repoPath.toAbsolutePath() + " checkout main");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         myMojo.useLatestVersionOnMainBranch = true;
         // When
         myMojo.execute();
@@ -164,9 +167,9 @@ public class VcsVersionMojoTest {
     }
 
     @Test
-    public void latestOnMaster() throws Exception {
+    void latestOnMaster() throws Exception {
         exec("git -C " + repoPath.toAbsolutePath() + " checkout master");
-        VcsVersionMojo myMojo = (VcsVersionMojo) rule.lookupConfiguredMojo(repoPath.toFile(), "vcs-version");
+        VcsVersionMojo myMojo = mojo();
         myMojo.useLatestVersionOnMainBranch = true;
         myMojo.mainBranchName = "master";
         // When

@@ -40,7 +40,8 @@ class SysCmdTest {
         }
         catch (SysCmdException e) {
             // Then
-            assertEquals("Cannot run program \"beppo\": error=2, No such file or directory", e.getMessage());
+            // The rest of the message differs between JDK versions
+            assertTrue(e.getMessage().startsWith("Cannot run program \"beppo\""), e.getMessage());
         }
     }
 

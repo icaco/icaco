@@ -2,9 +2,9 @@ package io.icaco.maven;
 
 import org.apache.maven.project.MavenProject;
 import org.jacoco.core.tools.ExecFileLoader;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.List;
@@ -14,18 +14,19 @@ import static io.icaco.maven.CheckAllCodeMojoTest.lineCoverageRule;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.commons.io.FileUtils.write;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CheckNewCodeMojoTest {
+class CheckNewCodeMojoTest {
 
     File repo = new File("target/check-new-code-test").getAbsoluteFile();
 
-    CheckNewCodeMojo mojo = new CheckNewCodeMojo();
+    CheckNewCodeMojo mojo;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
+        mojo = MojoDefaults.apply(new CheckNewCodeMojo(), "check-new-code");
         removeRepo();
         repo.mkdirs();
         exec("git -C " + repo, "init");
@@ -38,18 +39,16 @@ public class CheckNewCodeMojoTest {
         mojo.project.getBuild().setSourceDirectory(new File(repo, "src/main/java").getPath());
         mojo.project.getBuild().setOutputDirectory(new File("target/classes").getAbsolutePath());
         mojo.dataFile = dataFile;
-        mojo.haltOnFailure = true;
-        mojo.vcsType = "git";
         mojo.rules = List.of(lineCoverageRule("0.5"));
     }
 
-    @After
-    public void removeRepo() throws Exception {
+    @AfterEach
+    void removeRepo() throws Exception {
         deleteDirectory(repo);
     }
 
     @Test
-    public void noChangedClasses() throws Exception {
+    void noChangedClasses() throws Exception {
         // When
         mojo.execute();
         // Then
@@ -57,7 +56,7 @@ public class CheckNewCodeMojoTest {
     }
 
     @Test
-    public void changedClass() throws Exception {
+    void changedClass() throws Exception {
         // Given a changed source file for a class in target/classes
         write(new File(repo, "src/main/java/io/icaco/maven/RuleConfiguration.java"), "", defaultCharset());
         // When Then

@@ -12,7 +12,7 @@ Released to Maven Central as `io.github.icaco:icaco-maven-plugin`.
 
 ## Requirements
 
-- Java 11 or later
+- Java 17 or later
 - Maven 3.9 or later
 - `git` on the `PATH`. All VCS operations run the git CLI in the project's base directory.
 
