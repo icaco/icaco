@@ -29,7 +29,7 @@ Released to Maven Central as `io.github.icaco:icaco-maven-plugin`.
 <plugin>
     <groupId>io.github.icaco</groupId>
     <artifactId>icaco-maven-plugin</artifactId>
-    <version>1.5.1</version>
+    <version>2.0.0</version>
 </plugin>
 ```
 
@@ -79,7 +79,7 @@ In a multi-module build, the goal only runs in the top project by default. Set
 The usual way to use it is from the command line, together with `versions:set`:
 
 ```sh
-mvn io.github.icaco:icaco-maven-plugin:1.5.1:vcs-version versions:set \
+mvn io.github.icaco:icaco-maven-plugin:2.0.0:vcs-version versions:set \
     -DnewVersion=\${icaco.vcs.version} \
     -DuseJiraIdOnFeatureBranch=true \
   && mvn clean install -DskipTests
@@ -107,7 +107,7 @@ run `jacoco:prepare-agent` (or `init-jacoco-javaagent`) before the tests.
 <plugin>
     <groupId>io.github.icaco</groupId>
     <artifactId>icaco-maven-plugin</artifactId>
-    <version>1.5.1</version>
+    <version>2.0.0</version>
     <executions>
         <execution>
             <goals>
@@ -180,7 +180,7 @@ is set, so a multi-module build reports the status only once.
 enough to give the token and the state:
 
 ```sh
-mvn io.github.icaco:icaco-maven-plugin:1.5.1:bitbucket-set-build-status -DbuildState=SUCCESSFUL
+mvn io.github.icaco:icaco-maven-plugin:2.0.0:bitbucket-set-build-status -DbuildState=SUCCESSFUL
 ```
 
 The goal fails unless Bitbucket answers `204 No Content`.
@@ -204,7 +204,7 @@ locally without a signing key.
 ### Change version
 
 ```sh
-mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.5.1
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion=2.0.0
 ```
 
 ### Release
