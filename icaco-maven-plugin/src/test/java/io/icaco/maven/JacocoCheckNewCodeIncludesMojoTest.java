@@ -40,7 +40,7 @@ public class JacocoCheckNewCodeIncludesMojoTest {
         myMojo.execute();
         // Then
         String property = myMojo.project.getProperties().getProperty("jacoco.check.new.code.includes");
-        assertEquals("icaco/Test.class", property);
+        assertEquals("icaco/Test.class,icaco/Test$*.class", property);
     }
 
 

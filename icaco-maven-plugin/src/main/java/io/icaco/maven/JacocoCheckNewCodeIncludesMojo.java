@@ -1,7 +1,6 @@
 package io.icaco.maven;
 
-import io.icaco.core.vcs.VcsChangesCommand;
-import io.icaco.core.vcs.VcsType;
+import io.icaco.core.coverage.ChangedClassFiles;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -13,7 +12,6 @@ import java.util.List;
 import static io.icaco.core.vcs.VcsType.Git;
 import static io.icaco.core.vcs.VcsType.findVcsType;
 import static java.lang.String.join;
-import static java.util.stream.Collectors.toList;
 import static org.apache.maven.plugins.annotations.LifecyclePhase.INITIALIZE;
 
 @Mojo(name = "jacocoCheckNewCodeIncludes", defaultPhase = INITIALIZE)
@@ -36,18 +34,11 @@ public class JacocoCheckNewCodeIncludesMojo extends AbstractMojo {
     }
 
     List<String> getChangedClassFiles() {
-        Path sourcePath = Path.of(project.getBuild().getSourceDirectory()).toAbsolutePath();
-        Path basePath = project.getBasedir().toPath();
-        VcsType vcs = findVcsType(vcsType).orElse(Git);
-        return VcsChangesCommand.create(vcs, basePath)
-                .execute()
-                .stream()
-                .filter(path -> path.startsWith(sourcePath))
-                .map(Path::toString)
-                .filter(s -> s.endsWith(".java"))
-                .map(s -> s.replace(sourcePath + "/", ""))
-                .map(s -> s.replace(".java", ".class"))
-                .collect(toList());
+        return ChangedClassFiles.find(
+                findVcsType(vcsType).orElse(Git),
+                project.getBasedir().toPath(),
+                Path.of(project.getBuild().getSourceDirectory())
+        );
     }
 
 }

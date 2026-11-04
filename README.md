@@ -96,6 +96,9 @@ counts as changed if it is:
 Only `.java` files under the project's source directory are included. Deleted files
 are skipped. If the repository has no `origin` remote, only local changes are used.
 
+A changed `Foo.java` includes `Foo.class` and its inner and anonymous classes
+(`Foo$*.class`). If no classes have changed, the check is skipped.
+
 The goal reads the same configuration as `jacoco:check` (`rules`, `haltOnFailure`,
 `dataFile`, `excludes`), plus `vcsType` (default `git`). It needs `jacoco.exec`, so
 run `jacoco:prepare-agent` (or `init-jacoco-javaagent`) before the tests.
@@ -133,7 +136,7 @@ run `jacoco:prepare-agent` (or `init-jacoco-javaagent`) before the tests.
 ### check-all-code
 
 The same check as `check-new-code`, but on every class, with any `includes` you
-configure. It is a thin wrapper around the JaCoCo check logic, so the configuration
+configure. It is built on JaCoCo's public analysis API, and the configuration
 is the same as for `jacoco:check`.
 
 ### jacocoCheckNewCodeIncludes
