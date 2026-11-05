@@ -8,6 +8,7 @@
         <version>2.0.0</version>
     </parent>
     <artifactId>icaco-core</artifactId>
+    <name>Icaco Core</name>
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
